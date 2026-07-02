@@ -1,0 +1,8 @@
+jupyter==1.1.1
+matplotlib==3.10.8
+nbformat==5.10.4
+numpy==2.4.4
+pandas==3.0.2
+pyarrow==24.0.0
+scikit-learn==1.8.0
+xgboost==3.3.0
