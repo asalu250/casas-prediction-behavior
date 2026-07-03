@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hearth — Daily Rhythm Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-page:#1E1A16; --bg-card:#28221C; --bg-card-raised:#332C23; --bg-pill:#3A3227;
+  --text-primary:#F3ECDD; --text-secondary:#B7AB96; --text-muted:#7C7264;
+  --amber:#E3A455; --amber-dim:#8A6C3F; --clay:#D2785A; --clay-dim:#8A5A47;
+  --sage:#7FA087; --sage-dim:#546B58; --border:#3D362C; --border-soft:#302A22;
+  --radius-card:18px; --radius-pill:999px;
+  --font-display:'Fraunces', serif; --font-body:'Inter', sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg-page);font-family:var(--font-body);color:var(--text-primary);display:flex;justify-content:center;}
+.phone{width:100%;max-width:400px;min-height:100vh;background:var(--bg-page);display:flex;flex-direction:column;position:relative;}
+.topbar{padding:28px 22px 8px;display:flex;align-items:baseline;justify-content:space-between;}
+.brand{font-family:var(--font-display);font-weight:500;font-size:20px;}
+.brand-dot{color:var(--amber);}
+.date-label{font-size:12px;color:var(--text-muted);}
+.screen{flex:1;padding:8px 22px 100px;display:none;animation:fade .25s ease;}
+.screen.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+.glow-wrap{display:flex;flex-direction:column;align-items:center;padding:28px 0 8px;}
+.glow{width:132px;height:132px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;}
+.glow::before{content:'';position:absolute;inset:0;border-radius:50%;filter:blur(18px);opacity:0.55;}
+.glow-core{width:64px;height:64px;border-radius:50%;position:relative;z-index:1;}
+.status-word{font-family:var(--font-display);font-weight:500;font-size:24px;text-align:center;margin-top:18px;line-height:1.3;}
+.status-sub{font-size:14px;color:var(--text-secondary);text-align:center;margin-top:6px;max-width:280px;margin-left:auto;margin-right:auto;line-height:1.5;}
+.card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius-card);padding:18px;margin-top:16px;}
+.card-title{font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;}
+.reason-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border-soft);}
+.reason-row:first-of-type{border-top:none;padding-top:0;}
+.reason-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);margin-top:7px;flex-shrink:0;}
+.reason-text{font-size:14px;color:var(--text-primary);line-height:1.5;}
+.checkin-row{display:flex;gap:8px;margin-top:14px;}
+.checkin-btn{flex:1;padding:10px 8px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--bg-pill);color:var(--text-secondary);font-family:var(--font-body);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s ease;}
+.checkin-btn:hover{border-color:var(--amber-dim);color:var(--text-primary);}
+.checkin-btn.selected{background:var(--amber-dim);border-color:var(--amber);color:var(--text-primary);}
+.checkin-ack{font-size:13px;color:var(--sage);margin-top:10px;display:none;}
+.checkin-ack.show{display:block;}
+.day-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:6px;}
+.day-nav button{background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px 8px;}
+.day-nav button:hover{color:var(--amber);}
+.day-nav button:disabled{opacity:0.3;cursor:default;}
+.day-nav-label{font-size:12px;color:var(--text-muted);min-width:100px;text-align:center;}
+
+h1.screen-title{font-family:var(--font-display);font-weight:500;font-size:22px;margin:20px 0 4px;}
+.screen-sub{font-size:13px;color:var(--text-secondary);margin-bottom:18px;line-height:1.5;}
+.chart-svg{width:100%;height:auto;display:block;}
+.legend-row{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text-muted);}
+.legend-item{display:flex;align-items:center;gap:5px;}
+.legend-swatch{width:8px;height:8px;border-radius:50%;}
+
+.field-label{font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block;}
+.text-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-pill);color:var(--text-primary);font-family:var(--font-body);font-size:14px;margin-bottom:4px;}
+.text-input:focus{outline:none;border-color:var(--amber-dim);}
+.field-error{font-size:12px;color:var(--clay);min-height:16px;margin-bottom:10px;}
+.save-btn{width:100%;padding:12px;border-radius:var(--radius-pill);border:none;background:var(--sage-dim);color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;margin-top:8px;}
+.save-btn:hover{background:var(--sage);}
+.save-ack{font-size:12px;color:var(--sage);margin-top:8px;text-align:center;min-height:16px;}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
+.toggle-row + .toggle-row{border-top:1px solid var(--border-soft);}
+.toggle-label{font-size:14px;}
+.toggle-desc{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.switch{width:42px;height:24px;border-radius:12px;background:var(--bg-pill);border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s ease;}
+.switch.on{background:var(--sage-dim);border-color:var(--sage);}
+.switch-knob{width:18px;height:18px;border-radius:50%;background:var(--text-secondary);position:absolute;top:2px;left:2px;transition:transform .2s ease, background .2s ease;}
+.switch.on .switch-knob{transform:translateX(18px);background:var(--sage);}
+.switch.disabled{opacity:0.4;cursor:not-allowed;}
+.tier{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--border-soft);}
+.tier:first-of-type{border-top:none;}
+.tier-badge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;padding:3px 8px;border-radius:6px;height:fit-content;white-space:nowrap;}
+.tier-quiet{background:rgba(127,160,135,0.15);color:var(--sage);}
+.tier-nudge{background:rgba(227,164,85,0.15);color:var(--amber);}
+.tier-urgent{background:rgba(210,120,90,0.15);color:var(--clay);}
+.tier-text{font-size:13px;color:var(--text-secondary);line-height:1.5;}
+.preview-card{background:var(--bg-card-raised);border:1px dashed var(--border);border-radius:14px;padding:14px;margin-top:14px;font-size:13px;color:var(--text-secondary);}
+.preview-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;}
+
+.priv-item{padding:14px 0;border-top:1px solid var(--border-soft);}
+.priv-item:first-of-type{border-top:none;}
+.priv-title{font-size:14px;font-weight:500;margin-bottom:4px;}
+.priv-text{font-size:13px;color:var(--text-secondary);line-height:1.55;}
+.disclaimer{background:var(--bg-card-raised);border-left:2px solid var(--clay);border-radius:0 12px 12px 0;padding:14px 16px;margin-top:18px;font-size:13px;color:var(--text-secondary);line-height:1.6;}
+
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:400px;background:rgba(30,26,22,0.92);backdrop-filter:blur(12px);border-top:1px solid var(--border-soft);display:flex;padding:10px 8px calc(10px + env(safe-area-inset-bottom));}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--text-muted);font-family:var(--font-body);font-size:11px;cursor:pointer;padding:6px 4px;}
+.tab.active{color:var(--amber);}
+.tab-icon{width:20px;height:20px;}
+.loading{text-align:center;color:var(--text-muted);font-size:13px;padding:40px 0;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="topbar">
+    <div class="brand">Hearth<span class="brand-dot">·</span></div>
+    <div class="date-label" id="topDate">—</div>
+  </div>
+
+  <div class="screen active" id="screen-today">
+    <div class="glow-wrap">
+      <div class="glow" id="glowOuter"><div class="glow-core" id="glowCore"></div></div>
+      <div class="status-word" id="statusWord">Loading…</div>
+      <div class="status-sub" id="statusSub"></div>
+    </div>
+    <div class="day-nav">
+      <button id="prevBtn" onclick="shiftDay(-1)">&#8592;</button>
+      <div class="day-nav-label" id="dayNavLabel">—</div>
+      <button id="nextBtn" onclick="shiftDay(1)">&#8594;</button>
+    </div>
+    <div class="card" id="whyCard" style="display:none;">
+      <div class="card-title">What stood out</div>
+      <div id="reasonsList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">How are you feeling?</div>
+      <div class="checkin-row">
+        <button class="checkin-btn" data-mood="fine" onclick="checkin('fine')">Fine</button>
+        <button class="checkin-btn" data-mood="off" onclick="checkin('off')">A bit off</button>
+        <button class="checkin-btn" data-mood="rough" onclick="checkin('rough')">Rough day</button>
+      </div>
+      <div class="checkin-ack" id="checkinAck">Thanks — noted for today.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-trends">
+    <h1 class="screen-title">Your rhythm</h1>
+    <div class="screen-sub">Daily activity over the last 90 days, compared to your own rolling average. Dots mark days that stood out from your recent pattern.</div>
+    <svg class="chart-svg" id="trendChart" viewBox="0 0 356 200"></svg>
+    <div class="legend-row">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--amber-dim)"></span>Daily activity</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--text-secondary)"></span>14-day average</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--clay)"></span>Stood out</div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-companion">
+    <h1 class="screen-title">Companion</h1>
+    <div class="screen-sub">You decide what's shared, with whom, and how often. Nothing is sent without your say-so.</div>
+
+    <div class="card">
+      <label class="field-label" for="companionEmail">Companion's email</label>
+      <input class="text-input" id="companionEmail" type="email" placeholder="someone@example.com">
+      <div class="field-error" id="emailError"></div>
+
+      <div class="toggle-row">
+        <div><div class="toggle-label">Share with a companion</div><div class="toggle-desc">They can see a simplified summary</div></div>
+        <div class="switch" id="shareSwitch" onclick="toggleSwitch('shareSwitch')"><div class="switch-knob"></div></div>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Weekly digest</div><div class="toggle-desc">A quiet summary, once a week</div></div>
+        <div class="switch" id="digestSwitch" onclick="toggleSwitch('digestSwitch')"><div class="switch-knob"></div></div>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Same-day nudge</div><div class="toggle-desc">Only if today looked notably different</div></div>
+        <div class="switch" id="nudgeSwitch" onclick="toggleSwitch('nudgeSwitch')"><div class="switch-knob"></div></div>
+      </div>
+      <button class="save-btn" onclick="saveSettings()">Save settings</button>
+      <div class="save-ack" id="saveAck"></div>
+    </div>
+
+    <h1 class="screen-title" style="font-size:16px;margin-top:26px;">How alerts are tiered</h1>
+    <div class="card">
+      <div class="tier"><span class="tier-badge tier-quiet">Quiet</span><div class="tier-text">Most weeks. Your companion gets a brief digest, nothing urgent.</div></div>
+      <div class="tier"><span class="tier-badge tier-nudge">Nudge</span><div class="tier-text">A day stood out from your pattern. A gentle same-day email is sent, only if you've allowed it.</div></div>
+      <div class="tier"><span class="tier-badge tier-urgent">Check in</span><div class="tier-text">An unusually long stretch without any activity during the day. Higher-urgency, sent right away.</div></div>
+    </div>
+
+    <div class="preview-card">
+      <div class="preview-label">What your companion would see today</div>
+      <div id="companionPreview">—</div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-privacy">
+    <h1 class="screen-title">Privacy &amp; data</h1>
+    <div class="priv-item"><div class="priv-title">What's tracked</div><div class="priv-text">Motion, door, and item sensors around your home — never audio, video, or location outside it.</div></div>
+    <div class="priv-item"><div class="priv-title">Where it's processed</div><div class="priv-text">The status you see is computed from your own sensor history. Your companion never receives raw sensor data — only the plain-language summary shown in the preview.</div></div>
+    <div class="priv-item"><div class="priv-title">What a companion sees</div><div class="priv-text">A short email, only when you've turned sharing on — never timestamps or room-by-room detail.</div></div>
+    <div class="priv-item"><div class="priv-title">Your data, your control</div><div class="priv-text">Turn off sharing at any time — it stops the next scheduled email immediately. Every settings change is recorded with a timestamp.</div></div>
+    <div class="disclaimer">This app notices patterns in daily routine — it does not diagnose, and a flagged day is not a medical finding. If something feels wrong, please talk to a person, not just this screen.</div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab active" data-tab="today" onclick="showTab('today')">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+      Today
+    </button>
+    <button class="tab" data-tab="trends" onclick="showTab('trends')">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/></svg>
+      Trends
+    </button>
+    <button class="tab" data-tab="companion" onclick="showTab('companion')">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/><path d="M15 14c2.8.5 5 2.8 5 6"/></svg>
+      Companion
+    </button>
+    <button class="tab" data-tab="privacy" onclick="showTab('privacy')">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 3v6c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V5l8-3z"/></svg>
+      Privacy
+    </button>
+  </div>
+</div>
+
+<script>
+let ALL_DATES = [];
+let currentIndex = -1;
+let currentSettings = null;
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Request failed (${res.status})`);
+  }
+  return res.json();
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function applyGlowColor(color) {
+  let styleTag = document.getElementById('glowStyleDynamic');
+  const css = `#glowOuter::before{background:${color};} #glowCore{background:${color};box-shadow:0 0 24px 4px ${color};}`;
+  if (!styleTag) {
+    styleTag = document.createElement('style');
+    styleTag.id = 'glowStyleDynamic';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = css;
+}
+
+const LEVEL_COLOR = { normal: 'var(--sage)', quiet: 'var(--amber)', flagged: 'var(--clay)' };
+
+async function renderToday() {
+  const iso = ALL_DATES[currentIndex];
+  document.getElementById('topDate').textContent = fmtDate(iso);
+  document.getElementById('dayNavLabel').textContent = fmtDate(iso);
+  document.getElementById('prevBtn').disabled = currentIndex <= 0;
+  document.getElementById('nextBtn').disabled = currentIndex >= ALL_DATES.length - 1;
+
+  const day = await api(`/api/day/${iso}`);
+  applyGlowColor(LEVEL_COLOR[day.status.level]);
+  document.getElementById('statusWord').textContent = day.status.word;
+  document.getElementById('statusSub').textContent = day.status.sub;
+
+  const whyCard = document.getElementById('whyCard');
+  const list = document.getElementById('reasonsList');
+  list.innerHTML = '';
+  if (day.reasons.length > 0) {
+    whyCard.style.display = 'block';
+    day.reasons.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'reason-row';
+      row.innerHTML = `<div class="reason-dot"></div><div class="reason-text">${r}</div>`;
+      list.appendChild(row);
+    });
+  } else {
+    whyCard.style.display = 'none';
+  }
+
+  document.querySelectorAll('.checkin-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('checkinAck').classList.remove('show');
+  const existing = await api(`/api/checkin/${iso}`);
+  if (existing) {
+    document.querySelector(`.checkin-btn[data-mood="${existing.mood}"]`)?.classList.add('selected');
+    document.getElementById('checkinAck').classList.add('show');
+  }
+}
+
+function shiftDay(delta) {
+  currentIndex = Math.max(0, Math.min(ALL_DATES.length - 1, currentIndex + delta));
+  renderToday();
+}
+
+async function checkin(mood) {
+  const iso = ALL_DATES[currentIndex];
+  document.querySelectorAll('.checkin-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`.checkin-btn[data-mood="${mood}"]`).classList.add('selected');
+  await api('/api/checkin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date: iso, mood }),
+  });
+  document.getElementById('checkinAck').classList.add('show');
+}
+
+function toggleSwitch(id) {
+  document.getElementById(id).classList.toggle('on');
+  document.getElementById('saveAck').textContent = '';
+  renderCompanionPreviewLocal();
+}
+
+async function loadSettingsIntoForm() {
+  currentSettings = await api('/api/settings');
+  document.getElementById('companionEmail').value = currentSettings.companion_email || '';
+  setSwitch('shareSwitch', currentSettings.share_enabled);
+  setSwitch('digestSwitch', currentSettings.digest_enabled);
+  setSwitch('nudgeSwitch', currentSettings.nudge_enabled);
+  renderCompanionPreviewLocal();
+}
+
+function setSwitch(id, on) {
+  document.getElementById(id).classList.toggle('on', !!on);
+}
+
+async function saveSettings() {
+  const email = document.getElementById('companionEmail').value.trim();
+  const shareOn = document.getElementById('shareSwitch').classList.contains('on');
+  const errEl = document.getElementById('emailError');
+  errEl.textContent = '';
+
+  try {
+    currentSettings = await api('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companion_email: email || null,
+        share_enabled: shareOn,
+        digest_enabled: document.getElementById('digestSwitch').classList.contains('on'),
+        nudge_enabled: document.getElementById('nudgeSwitch').classList.contains('on'),
+      }),
+    });
+    document.getElementById('saveAck').textContent = 'Saved.';
+    renderCompanionPreviewLocal();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+}
+
+function renderCompanionPreviewLocal() {
+  const shareOn = document.getElementById('shareSwitch').classList.contains('on');
+  const el = document.getElementById('companionPreview');
+  if (!shareOn) {
+    el.textContent = 'Sharing is off — your companion sees nothing.';
+    return;
+  }
+  const iso = ALL_DATES[currentIndex];
+  if (!iso) { el.textContent = '—'; return; }
+  api(`/api/day/${iso}`).then(day => {
+    el.textContent = day.status.level === 'flagged'
+      ? `"${fmtDate(iso)} looked a bit different from the usual routine. No action needed — just checking in when you get a chance."`
+      : `"${fmtDate(iso)} looked like a normal day — nothing to report."`;
+  });
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  if (tab === 'trends') renderTrendChart();
+  if (tab === 'companion') loadSettingsIntoForm();
+}
+
+async function renderTrendChart() {
+  const days = await api('/api/days?limit=90');
+  const svg = document.getElementById('trendChart');
+  const W = 356, H = 200, padL = 4, padR = 4, padT = 10, padB = 10;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+
+  const vals = days.map(d => d.total_events);
+  const rollVals = days.map(d => d.total_events_roll14_mean);
+  const maxV = Math.max(...vals, ...rollVals.filter(v => v !== null && v !== undefined));
+  const n = days.length;
+  const x = i => padL + (i / (n - 1)) * plotW;
+  const y = v => padT + plotH - (v / maxV) * plotH;
+
+  let pathD = '';
+  vals.forEach((v, i) => { pathD += (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(v).toFixed(1) + ' '; });
+
+  let rollD = '', started = false;
+  rollVals.forEach((v, i) => {
+    if (v === null || v === undefined) return;
+    rollD += (started ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(v).toFixed(1) + ' ';
+    started = true;
+  });
+
+  let dots = '';
+  days.forEach((d, i) => {
+    if (d.status.level === 'flagged') {
+      dots += `<circle cx="${x(i).toFixed(1)}" cy="${y(d.total_events).toFixed(1)}" r="3.2" fill="var(--clay)" stroke="var(--bg-page)" stroke-width="1" style="cursor:pointer" onclick="jumpToDate('${d.date}')"/>`;
+    }
+  });
+
+  svg.innerHTML = `
+    <path d="${pathD}" fill="none" stroke="var(--amber-dim)" stroke-width="1.4"/>
+    <path d="${rollD}" fill="none" stroke="var(--text-secondary)" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>
+    ${dots}
+  `;
+}
+
+function jumpToDate(iso) {
+  currentIndex = ALL_DATES.indexOf(iso);
+  showTab('today');
+}
+
+async function init() {
+  ALL_DATES = await api('/api/dates');
+  currentIndex = ALL_DATES.length - 1;
+  await renderToday();
+}
+init();
+</script>
+</body>
+</html>
